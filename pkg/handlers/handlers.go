@@ -398,10 +398,10 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		))
 	textAfter := "⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n\n" +
 		"Забронируй столик на нашем сайте и воспользуйся скидкой в ресторане:\n" +
-		"🔹<a href=\"https://ketino.ru\">Наш сайт</a>\n" +
-		"🔸<a href=\"https://instagram.com/ketino_rest\">Insta</a>\n" +
-		"🔹<a href=\"https://vk.com/ketinorest\">Vkontakte</a>\n" +
-		"🔸<a href=\"https://t.me/ketinorest\">Telegram</a>\n"
+		"🔹<a href=\"https://ketino.ru\">НАШ САЙТ</a>\n" +
+		"🔸<a href=\"https://instagram.com/ketino_rest\">INSTA</a>\n" +
+		"🔹<a href=\"https://vk.com/ketinorest\">VKONTAKTE</a>\n" +
+		"🔸<a href=\"https://t.me/ketinorest\">TELEGRAM</a>\n"
 	resAfter := tgbotapi.NewMessage(chatID, textAfter)
 	resAfter.ReplyMarkup = mk
 	resAfter.ParseMode = tgbotapi.ModeHTML

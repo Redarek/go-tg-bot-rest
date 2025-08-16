@@ -19,15 +19,15 @@ type Repository struct {
 
 func NewRepository(db *pgxpool.Pool) *Repository { return &Repository{DB: db} }
 
-func (r *Repository) CreatePromotion(ctx context.Context, name, url string) error {
+func (r *Repository) CreatePromotion(ctx context.Context, name, value string) error {
 	_, err := r.DB.Exec(ctx,
-		`INSERT INTO promotions (name, url) VALUES ($1, $2)`, name, url)
+		`INSERT INTO promotions (name, value) VALUES ($1, $2)`, name, value)
 	return err
 }
 
-func (r *Repository) UpdatePromotion(ctx context.Context, id int, name, url string) error {
+func (r *Repository) UpdatePromotion(ctx context.Context, id int, name, value string) error {
 	_, err := r.DB.Exec(ctx,
-		`UPDATE promotions SET name=$1, url=$2 WHERE id=$3`, name, url, id)
+		`UPDATE promotions SET name=$1, value=$2 WHERE id=$3`, name, value, id)
 	return err
 }
 
@@ -38,7 +38,7 @@ func (r *Repository) DeletePromotion(ctx context.Context, id int) error {
 
 func (r *Repository) GetPromotions(ctx context.Context) ([]models.Promotion, error) {
 	rows, err := r.DB.Query(ctx,
-		`SELECT id, name, url FROM promotions ORDER BY id`)
+		`SELECT id, name, value FROM promotions ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (r *Repository) GetPromotions(ctx context.Context) ([]models.Promotion, err
 	var list []models.Promotion
 	for rows.Next() {
 		var p models.Promotion
-		if err := rows.Scan(&p.ID, &p.Name, &p.URL); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Value); err != nil {
 			return nil, err
 		}
 		list = append(list, p)
@@ -58,11 +58,11 @@ func (r *Repository) GetPromotions(ctx context.Context) ([]models.Promotion, err
 func (r *Repository) GetRandomPromotion(ctx context.Context) (models.Promotion, error) {
 	var p models.Promotion
 	err := r.DB.QueryRow(ctx,
-		`SELECT id, name, url FROM promotions ORDER BY RANDOM() LIMIT 1`).
-		Scan(&p.ID, &p.Name, &p.URL)
+		`SELECT id, name, value FROM promotions ORDER BY RANDOM() LIMIT 1`).
+		Scan(&p.ID, &p.Name, &p.Value)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return models.Promotion{}, errors.New("список стикерпаков пуст")
+		return models.Promotion{}, errors.New("список скидок пуст")
 	}
 	return p, err
 }

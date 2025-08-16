@@ -231,7 +231,7 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 
 	case "add_wait_name":
 		_ = h.service.Repo.SetAdminState(ctx, models.AdminState{
-			UserID: m.From.ID, State: "add_wait_url", Data: m.Text,
+			UserID: m.From.ID, State: "add_wait_value", Data: m.Text,
 		})
 		_, err := h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте ссылку:"))
 		if err != nil {
@@ -239,7 +239,7 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 			return // todo
 		}
 
-	case "add_wait_url":
+	case "add_wait_value":
 		if err := h.service.Repo.CreatePromotion(ctx, st.Data, m.Text); err != nil {
 			_, err = h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
 			if err != nil {
@@ -262,21 +262,21 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 	case "edit_wait_name":
 		_ = h.service.Repo.SetAdminState(ctx, models.AdminState{
 			UserID: m.From.ID,
-			State:  "edit_wait_url",
+			State:  "edit_wait_value",
 			Data:   st.Data + "|" + m.Text,
 		})
-		_, err := h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте новую ссылку:"))
+		_, err := h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте новое значение:"))
 		if err != nil {
 			log.Println(err)
 			return // todo
 		}
 
-	case "edit_wait_url":
+	case "edit_wait_value":
 		parts := strings.SplitN(st.Data, "|", 2)
 		id, _ := strconv.Atoi(parts[0])
 		newName := parts[1]
-		newURL := m.Text
-		if err := h.service.Repo.UpdatePromotion(ctx, id, newName, newURL); err != nil {
+		newValue := m.Text
+		if err := h.service.Repo.UpdatePromotion(ctx, id, newName, newValue); err != nil {
 			_, err = h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
 			if err != nil {
 				log.Println(err)
@@ -370,7 +370,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	time.Sleep(2 * time.Second)
 
 	text := "😋<b>ВОТ ЭТО НАХОДКА!</b> Ты получил свою вкусную скидку!\n" +
-		"🍷Теперь осталось только прийти, заказать любимые блюда и насладиться вечером.\n" + p.URL
+		"🍷Теперь осталось только прийти, заказать любимые блюда и насладиться вечером.\n" + p.Value
 
 	res := tgbotapi.NewMessage(chatID, text)
 	res.ParseMode = tgbotapi.ModeHTML

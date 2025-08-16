@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS promotions (
                                              id SERIAL PRIMARY KEY,
                                              name TEXT UNIQUE NOT NULL,
-                                             url TEXT NOT NULL
+                                             value TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS user_claims (
                                            user_id BIGINT PRIMARY KEY

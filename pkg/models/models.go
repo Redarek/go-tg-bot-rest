@@ -3,7 +3,7 @@ package models
 type Promotion struct {
 	ID      int
 	Name    string
-	URL     string
+	Value   string
 	Deleted bool
 }
 

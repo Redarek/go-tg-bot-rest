@@ -1,0 +1,114 @@
+name: CI & CD
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image name
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Build & push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+    outputs:
+      tag: ${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Sync project files
+        working-directory: ${{ github.workspace }}
+        run: |
+          rsync -az --delete -e "ssh -o StrictHostKeyChecking=no" \
+            docker-compose.yml migrations \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/tg-bot/
+
+      - name: Create .env on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<'EOF'
+            cat > ~/tg-bot/.env <<EOT
+            TELEGRAM_APITOKEN=${{ secrets.TELEGRAM_APITOKEN }}
+            ADMIN_ID=${{ secrets.ADMIN_ID }}
+            SHOP_URL=${{ secrets.SHOP_URL }}
+            SUB_CHANNEL_ID=${{ secrets.SUB_CHANNEL_ID }}
+            SUB_CHANNEL_LINK=${{ secrets.SUB_CHANNEL_LINK }}
+            
+            POSTGRES_HOST=db
+            POSTGRES_PORT=5432
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            EOT
+            EOF
+
+      - name: Login to GHCR on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin"
+
+      - name: Pull image & restart bot
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd ~/tg-bot &&
+            export TAG=${{ needs.build-and-push.outputs.tag }} &&
+            docker compose pull bot &&
+            docker compose up -d --no-deps bot
+          "
+
+      - name: Run DB migrations
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            cd ~/tg-bot
+
+            docker compose up -d db
+
+            echo '⌛ Waiting for Postgres …'
+            until docker compose exec -T db \
+                  pg_isready -U ${{
+                    secrets.POSTGRES_USER }} -d ${{
+                    secrets.POSTGRES_DB }} >/dev/null 2>&1
+            do
+              sleep 2
+            done
+            echo '✅ Postgres is ready'
+
+            docker run --rm \
+              --network tg-bot_default \
+              -v \$(pwd)/migrations:/migrations \
+              migrate/migrate:latest \
+              -path=/migrations \
+              -database \"postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_DB }}?sslmode=disable\" \
+              up
+          "

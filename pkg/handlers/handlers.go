@@ -370,7 +370,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	time.Sleep(2 * time.Second)
 
 	textBefore := "Ваша счастливая скидка:\n" +
-		"👉" + p.Value + "👈"
+		"👉<u><b>" + p.Value + "</b></u>👈"
 	resBefore := tgbotapi.NewMessage(chatID, textBefore)
 	resBefore.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(resBefore)
@@ -381,7 +381,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 
 	time.Sleep(1 * time.Second)
 	text := "😋<b>ВОТ ЭТО НАХОДКА!</b> Ты получил свою вкусную скидку!\n" +
-		"🍷Теперь осталось только прийти, заказать любимые блюда и насладиться вечером.\n" + p.Value
+		"Теперь осталось только прийти, заказать любимые блюда и насладиться вечером🍷\n"
 	res := tgbotapi.NewMessage(chatID, text)
 	res.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(res)
@@ -391,11 +391,12 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	}
 
 	time.Sleep(1 * time.Second)
-	textAfter := "⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n" +
+	textAfter := "⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n\n" +
 		"Забронируй столик на нашем сайте и воспользуйся скидкой в ресторане:\n" +
-		"🟣<a href=\"https://ketino.ru\">Наш сайт</a>\n" +
-		"🔵<a href=\"https://instagram.com/ketino_rest\">Инста</a>\n" +
-		"🟣<a href=\"https://vk.com/ketinorest\">ВКонтакте</a>"
+		"🔹<a href=\"https://ketino.ru\">Наш сайт</a>\n" +
+		"🔸<a href=\"https://instagram.com/ketino_rest\">Insta</a>\n" +
+		"🔹<a href=\"https://vk.com/ketinorest\">Vkontakte</a>\n" +
+		"🔸<a href=\"https://t.me/ketinorest\">Telegram</a>\n"
 	resAfter := tgbotapi.NewMessage(chatID, textAfter)
 	resAfter.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(resAfter)

@@ -77,6 +77,7 @@ func (h *Handler) HandleUpdate(upd tgbotapi.Update) {
 func (h *Handler) sendStartMessage(chatID int64) {
 	err := h.service.Repo.UpsertBotUser(context.Background(), chatID)
 	if err != nil {
+		log.Println(err)
 		return // todo
 	}
 
@@ -97,8 +98,9 @@ func (h *Handler) sendStartMessage(chatID int64) {
 	photo.ReplyMarkup = mk
 	photo.ParseMode = tgbotapi.ModeHTML
 
-	if _, err := h.bot.Send(photo); err != nil {
-		_ = err
+	if _, err = h.bot.Send(photo); err != nil {
+		// todo
+		log.Println(err)
 	}
 }
 
@@ -121,6 +123,7 @@ func (h *Handler) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery)
 		msg.ReplyMarkup = mk
 		_, err := h.bot.Send(msg)
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 
@@ -135,6 +138,7 @@ func (h *Handler) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery)
 		msg.ReplyMarkup = mk
 		_, err := h.bot.Send(msg)
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 
@@ -144,11 +148,13 @@ func (h *Handler) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery)
 			_, err = h.bot.Send(tgbotapi.NewMessage(q.Message.Chat.ID,
 				"Ошибка удаления: "+err.Error()))
 			if err != nil {
+				log.Println(err)
 				return // todo
 			}
 		} else {
 			_, err = h.bot.Send(tgbotapi.NewMessage(q.Message.Chat.ID, "✅ Удалено"))
 			if err != nil {
+				log.Println(err)
 				return // todo
 			}
 		}
@@ -161,6 +167,7 @@ func (h *Handler) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery)
 		_, err := h.bot.Send(tgbotapi.NewMessage(q.Message.Chat.ID,
 			"Отправьте новое название:"))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 	}
@@ -181,6 +188,7 @@ func (h *Handler) handleAdminCommand(ctx context.Context, m *tgbotapi.Message) {
 		_, err := h.bot.Send(tgbotapi.NewMessage(m.Chat.ID,
 			"Отправьте название новой скидки:"))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 
@@ -194,6 +202,7 @@ func (h *Handler) showPromotionsList(ctx context.Context, chatID int64) {
 	if len(promotions) == 0 {
 		_, err := h.bot.Send(tgbotapi.NewMessage(chatID, "Скидок не добавлено"))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 		return
@@ -210,6 +219,7 @@ func (h *Handler) showPromotionsList(ctx context.Context, chatID int64) {
 	msg.ReplyMarkup = mk
 	_, err := h.bot.Send(msg)
 	if err != nil {
+		log.Println(err)
 		return // todo
 	}
 }
@@ -225,6 +235,7 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 		})
 		_, err := h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте ссылку:"))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 
@@ -232,16 +243,19 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 		if err := h.service.Repo.CreatePromotion(ctx, st.Data, m.Text); err != nil {
 			_, err = h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
 			if err != nil {
+				log.Println(err)
 				return // todo
 			}
 			return
 		}
 		err := h.service.Repo.ClearAdminState(ctx, m.From.ID)
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 		_, err = h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "✅ Скидка добавлена"))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 
@@ -253,6 +267,7 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 		})
 		_, err := h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте новую ссылку:"))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 
@@ -264,16 +279,19 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 		if err := h.service.Repo.UpdatePromotion(ctx, id, newName, newURL); err != nil {
 			_, err = h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
 			if err != nil {
+				log.Println(err)
 				return // todo
 			}
 			return
 		}
 		err := h.service.Repo.ClearAdminState(ctx, m.From.ID)
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 		_, err = h.bot.Send(tgbotapi.NewMessage(m.Chat.ID, "✅ Обновлено"))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 	}
@@ -291,7 +309,7 @@ func (h *Handler) subscribed(userID int64) bool {
 
 	member, err := h.bot.GetChatMember(tgbotapi.GetChatMemberConfig{ChatConfigWithUser: cfg})
 	if err != nil {
-		log.Println("GetChatMember:", err)
+		log.Println(err)
 		return false
 	}
 
@@ -308,6 +326,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		_, err := h.bot.Send(tgbotapi.NewMessage(chatID,
 			"Сначала нужно подписаться на канал "+h.subChannelLink))
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 		return
@@ -319,6 +338,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			_, err = h.bot.Send(tgbotapi.NewMessage(chatID,
 				"⚠️ Скидок пока нет. Попробуйте позже 🕒"))
 			if err != nil {
+				log.Println(err)
 				return // todo
 			}
 			return
@@ -333,6 +353,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		msg.ReplyMarkup = mk
 		_, err = h.bot.Send(msg)
 		if err != nil {
+			log.Println(err)
 			return // todo
 		}
 		return
@@ -342,6 +363,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	dice.Emoji = "🎲" // есть ещё 🎲 ⚽ 🏀 🎳 🎯🎰
 	_, err = h.bot.Send(dice)
 	if err != nil {
+		log.Println(err)
 		return // todo
 	}
 
@@ -354,6 +376,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	res.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(res)
 	if err != nil {
+		log.Println(err)
 		return // todo
 	}
 
@@ -368,6 +391,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	resAfterDraw.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(resAfterDraw)
 	if err != nil {
+		log.Println(err)
 		return // todo
 	}
 }

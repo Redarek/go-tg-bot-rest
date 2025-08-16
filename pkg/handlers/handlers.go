@@ -86,9 +86,9 @@ func (h *Handler) sendStartMessage(chatID int64) {
 			tgbotapi.NewInlineKeyboardButtonData("Получить скидку", "draw"),
 		))
 
-	caption := "🎯<b><u>Готов испытать удачу?</u></b>\n" +
+	caption := "🍀<b><u>Готов испытать удачу?</u></b>\n" +
 		"Запускай наше «Колесо Вкуса» и забирай случайную скидку в нашем ресторане!\n" +
-		"☸️<i>Получай скидку и приходи за своим вкусным бонусом!</i>"
+		"☸😋<i>Получай скидку и приходи за своим вкусным бонусом!</i>"
 
 	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
 		Name:  "start.jpg",
@@ -381,7 +381,8 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 
 	time.Sleep(1 * time.Second)
 	text := "😋<b>ВОТ ЭТО НАХОДКА!</b> Ты получил свою вкусную скидку!\n" +
-		"Теперь осталось только прийти, заказать любимые блюда и насладиться вечером🍷\n"
+		"Теперь осталось только прийти, заказать любимые блюда и насладиться вечером🍷\n" +
+		"Покажи сообщение со скидкой персоналу ресторана, чтобы применить скидку 🙌"
 	res := tgbotapi.NewMessage(chatID, text)
 	res.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(res)
@@ -391,6 +392,10 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	}
 
 	time.Sleep(1 * time.Second)
+	mk := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonURL("Забронировать столик", h.shopURL),
+		))
 	textAfter := "⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n\n" +
 		"Забронируй столик на нашем сайте и воспользуйся скидкой в ресторане:\n" +
 		"🔹<a href=\"https://ketino.ru\">Наш сайт</a>\n" +
@@ -398,6 +403,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		"🔹<a href=\"https://vk.com/ketinorest\">Vkontakte</a>\n" +
 		"🔸<a href=\"https://t.me/ketinorest\">Telegram</a>\n"
 	resAfter := tgbotapi.NewMessage(chatID, textAfter)
+	resAfter.ReplyMarkup = mk
 	resAfter.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(resAfter)
 	if err != nil {

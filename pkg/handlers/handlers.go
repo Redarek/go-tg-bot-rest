@@ -87,8 +87,8 @@ func (h *Handler) sendStartMessage(chatID int64) {
 		))
 
 	caption := "🎯<b><u>Готов испытать удачу?</u></b>\n" +
-		"Запускай наше «Колесо Вкуса» и забирай случайную скидку на заказ в нашем ресторане!\n" +
-		"☸️<i>Крути колесо и приходи за своим вкусным бонусом!</i>"
+		"Запускай наше «Колесо Вкуса» и забирай случайную скидку в нашем ресторане!\n" +
+		"☸️<i>Получай скидку и приходи за своим вкусным бонусом!</i>"
 
 	photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileBytes{
 		Name:  "start.jpg",
@@ -369,9 +369,19 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 
 	time.Sleep(2 * time.Second)
 
+	textBefore := "Ваша счастливая скидка:\n" +
+		"👉" + p.Value + "👈"
+	resBefore := tgbotapi.NewMessage(chatID, textBefore)
+	resBefore.ParseMode = tgbotapi.ModeHTML
+	_, err = h.bot.Send(resBefore)
+	if err != nil {
+		log.Println(err)
+		return // todo
+	}
+
+	time.Sleep(1 * time.Second)
 	text := "😋<b>ВОТ ЭТО НАХОДКА!</b> Ты получил свою вкусную скидку!\n" +
 		"🍷Теперь осталось только прийти, заказать любимые блюда и насладиться вечером.\n" + p.Value
-
 	res := tgbotapi.NewMessage(chatID, text)
 	res.ParseMode = tgbotapi.ModeHTML
 	_, err = h.bot.Send(res)
@@ -381,15 +391,14 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	}
 
 	time.Sleep(1 * time.Second)
-	textAfterDraw := "⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n" +
+	textAfter := "⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n" +
 		"Забронируй столик на нашем сайте и воспользуйся скидкой в ресторане:\n" +
 		"🟣<a href=\"https://ketino.ru\">Наш сайт</a>\n" +
 		"🔵<a href=\"https://instagram.com/ketino_rest\">Инста</a>\n" +
 		"🟣<a href=\"https://vk.com/ketinorest\">ВКонтакте</a>"
-
-	resAfterDraw := tgbotapi.NewMessage(chatID, textAfterDraw)
-	resAfterDraw.ParseMode = tgbotapi.ModeHTML
-	_, err = h.bot.Send(resAfterDraw)
+	resAfter := tgbotapi.NewMessage(chatID, textAfter)
+	resAfter.ParseMode = tgbotapi.ModeHTML
+	_, err = h.bot.Send(resAfter)
 	if err != nil {
 		log.Println(err)
 		return // todo

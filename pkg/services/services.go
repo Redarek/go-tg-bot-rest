@@ -18,11 +18,12 @@ func NewService(repo *repositories.Repository) *Service {
 func (s *Service) ClaimPromotion(ctx context.Context, userID, adminID int64) (models.Promotion, error) {
 	if userID != adminID {
 		if s.Repo.HasUserClaimed(ctx, userID) {
-			return models.Promotion{}, errors.New("⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n" +
-				"🔄Хочешь другой? Тогда заказывай нашу броню TWILIGHT HAMMER и получай в бонус фирменный стикерпак, который идёт в комплекте с экипировкой.\n" +
-				"Заказать можешь тут :\n" +
-				"🟣<a href=\"https://www.wildberries.ru/brands/311439225-twilight-hammer\">WILDBERRIES</a>\n" +
-				"🔵<a href=\"https://vk.com/t.hammer.clan\">VKONTAKTE</a>")
+			return models.Promotion{}, errors.New("⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n\n" +
+				"Забронируй столик на нашем сайте и воспользуйся скидкой в ресторане:\n" +
+				"🔹<a href=\"https://ketino.ru\">НАШ САЙТ</a>\n" +
+				"🔸<a href=\"https://instagram.com/ketino_rest\">INSTA</a>\n" +
+				"🔹<a href=\"https://vk.com/ketinorest\">VKONTAKTE</a>\n" +
+				"🔸<a href=\"https://t.me/ketinorest\">TELEGRAM</a>\n")
 		}
 
 		err := s.Repo.MarkUserClaimed(ctx, userID)

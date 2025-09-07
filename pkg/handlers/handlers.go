@@ -365,6 +365,9 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 
 	// …а дальше — без блокировки текущего воркера
 	go func(chatID int64, value, imageURL, shop string) {
+		goCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		time.Sleep(2 * time.Second)
 
 		text := "Ваша счастливая скидка:\n" +
@@ -375,7 +378,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(imageURL))
 			photo.Caption = text
 			photo.ParseMode = tgbotapi.ModeHTML
-			_, err = h.sender.Send(ctx, photo)
+			_, err = h.sender.Send(goCtx, photo)
 			if err != nil {
 				log.Println("send with photo", err)
 			}
@@ -383,7 +386,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			// Отправляем без фото
 			msg := tgbotapi.NewMessage(chatID, text)
 			msg.ParseMode = tgbotapi.ModeHTML
-			_, err = h.sender.Send(ctx, msg)
+			_, err = h.sender.Send(goCtx, msg)
 			if err != nil {
 				log.Println("send without photo", err)
 			}
@@ -404,7 +407,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		am := tgbotapi.NewMessage(chatID, after)
 		am.ParseMode = tgbotapi.ModeHTML
 		am.ReplyMarkup = mk
-		_, err = h.sender.Send(ctx, am)
+		_, err = h.sender.Send(goCtx, am)
 		if err != nil {
 			log.Println("send CAT", err)
 		}

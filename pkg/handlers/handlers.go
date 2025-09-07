@@ -310,7 +310,7 @@ func (h *Handler) subscribed(ctx context.Context, userID int64) bool {
 
 func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	// Проверка подписки
-	subCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	subCtx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 	if !h.subscribed(subCtx, userID) {
 		mk := tgbotapi.NewInlineKeyboardMarkup(

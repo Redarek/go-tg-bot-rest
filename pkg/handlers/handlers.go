@@ -192,7 +192,7 @@ func (h *Handler) showPromotionsList(ctx context.Context, chatID int64) {
 	defer cancel()
 	promotions, err := h.service.Repo.GetPromotions(dbctx)
 	if err != nil {
-		log.Println("GetPromotions:", err)
+		log.Println("GetPromotions: ", err)
 		return
 	}
 	if len(promotions) == 0 {
@@ -205,7 +205,7 @@ func (h *Handler) showPromotionsList(ctx context.Context, chatID int64) {
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}
 	mk := tgbotapi.NewInlineKeyboardMarkup(rows...)
-	msg := tgbotapi.NewMessage(chatID, "Выберите скидку:")
+	msg := tgbotapi.NewMessage(chatID, "Выберите скидку")
 	msg.ReplyMarkup = mk
 	_, _ = h.sender.Send(ctx, msg)
 }
@@ -221,18 +221,13 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
 			UserID: m.From.ID, State: "add_wait_value", Data: m.Text,
 		})
-		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте значение скидки:"))
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте значение скидки"))
 
 	case "add_wait_value":
-		//if err := h.service.Repo.CreatePromotion(dbctx, st.Data, m.Text); err != nil {
-		//	_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
-		//	return
-		//}
-		//_ = h.service.Repo.ClearAdminState(dbctx, m.From.ID)
 		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
 			UserID: m.From.ID, State: "add_wait_image_url", Data: st.Data + "|" + m.Text,
 		})
-		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "✅ Скидка добавлена"))
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте ссылку на картинку"))
 
 	case "add_wait_image_url":
 		// Сохраняем image_url и создаем новую скидку
@@ -255,7 +250,7 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
 			UserID: m.From.ID, State: "edit_wait_value", Data: st.Data + "|" + m.Text,
 		})
-		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте новое значение скидки:"))
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте новое значение скидки"))
 
 	case "edit_wait_value":
 		// Обработка изменения URL скидки
@@ -268,7 +263,7 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
 			UserID: m.From.ID, State: "edit_wait_image_url", Data: fmt.Sprintf("%d|%s|%s", id, newName, newURL),
 		})
-		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте ссылку на новое изображение скидки (https://example.com):"))
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте ссылку на новую картинку"))
 	case "edit_wait_image_url":
 		// Обновление image_url и данных скидки
 		parts := strings.SplitN(st.Data, "|", 3)

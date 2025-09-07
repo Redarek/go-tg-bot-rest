@@ -123,8 +123,8 @@ func (h *Handler) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery)
 	case q.Data == "draw":
 		h.processDraw(ctx, q.Message.Chat.ID, q.From.ID)
 
-	case strings.HasPrefix(q.Data, "pack_"):
-		id, _ := strconv.Atoi(strings.TrimPrefix(q.Data, "pack_"))
+	case strings.HasPrefix(q.Data, "promotion_"):
+		id, _ := strconv.Atoi(strings.TrimPrefix(q.Data, "promotion_"))
 		mk := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("✏️ Редактировать", fmt.Sprintf("edit_%d", id)),
@@ -152,7 +152,7 @@ func (h *Handler) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery)
 		id, _ := strconv.Atoi(strings.TrimPrefix(q.Data, "delok_"))
 		dbctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 		defer cancel()
-		if err := h.service.Repo.DeleteStickerPack(dbctx, id); err != nil {
+		if err := h.service.Repo.DeletePromotion(dbctx, id); err != nil {
 			_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(q.Message.Chat.ID, "Ошибка удаления: "+err.Error()))
 		} else {
 			_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(q.Message.Chat.ID, "✅ Удалено"))
@@ -173,9 +173,9 @@ func (h *Handler) handleAdminCommand(ctx context.Context, m *tgbotapi.Message) {
 	switch m.Command() {
 	case "start":
 		h.sendStartMessage(ctx, m.Chat.ID)
-	case "packs":
-		h.showPacksList(ctx, m.Chat.ID)
-	case "addpack":
+	case "promotions":
+		h.showPromotionsList(ctx, m.Chat.ID)
+	case "addpromotion":
 		dbctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 		defer cancel()
 		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
@@ -187,21 +187,21 @@ func (h *Handler) handleAdminCommand(ctx context.Context, m *tgbotapi.Message) {
 	}
 }
 
-func (h *Handler) showPacksList(ctx context.Context, chatID int64) {
+func (h *Handler) showPromotionsList(ctx context.Context, chatID int64) {
 	dbctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 	defer cancel()
-	packs, err := h.service.Repo.GetStickerPacks(dbctx)
+	promotions, err := h.service.Repo.GetPromotions(dbctx)
 	if err != nil {
-		log.Println("GetStickerPacks:", err)
+		log.Println("GetPromotions:", err)
 		return
 	}
-	if len(packs) == 0 {
+	if len(promotions) == 0 {
 		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(chatID, "Скидок не добавлено"))
 		return
 	}
 	var rows [][]tgbotapi.InlineKeyboardButton
-	for _, p := range packs {
-		btn := tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("[%d] %s", p.ID, p.Name), fmt.Sprintf("pack_%d", p.ID))
+	for _, p := range promotions {
+		btn := tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("[%d] %s", p.ID, p.Name), fmt.Sprintf("promotion_%d", p.ID))
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(btn))
 	}
 	mk := tgbotapi.NewInlineKeyboardMarkup(rows...)
@@ -219,35 +219,73 @@ func (h *Handler) handleAdminDialog(ctx context.Context, m *tgbotapi.Message) {
 
 	case "add_wait_name":
 		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
-			UserID: m.From.ID, State: "add_wait_url", Data: m.Text,
+			UserID: m.From.ID, State: "add_wait_value", Data: m.Text,
 		})
 		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте значение скидки:"))
 
-	case "add_wait_url":
-		if err := h.service.Repo.CreateStickerPack(dbctx, st.Data, m.Text); err != nil {
+	case "add_wait_value":
+		//if err := h.service.Repo.CreatePromotion(dbctx, st.Data, m.Text); err != nil {
+		//	_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
+		//	return
+		//}
+		//_ = h.service.Repo.ClearAdminState(dbctx, m.From.ID)
+		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
+			UserID: m.From.ID, State: "add_wait_image_url", Data: st.Data + "|" + m.Text,
+		})
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "✅ Скидка добавлена"))
+
+	case "add_wait_image_url":
+		// Сохраняем image_url и создаем новую скидку
+		parts := strings.SplitN(st.Data, "|", 2)
+		name := parts[0]
+		url := parts[1]
+		imageURL := m.Text
+
+		// Создаем скидку в базе данных
+		if err := h.service.Repo.CreatePromotion(dbctx, name, url, imageURL); err != nil {
 			_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
 			return
 		}
+
+		// Очищаем состояние админа
 		_ = h.service.Repo.ClearAdminState(dbctx, m.From.ID)
-		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "✅ Скидка добавлена"))
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "✅ Скидка с картинкой добавлена"))
 
 	case "edit_wait_name":
 		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
-			UserID: m.From.ID, State: "edit_wait_url", Data: st.Data + "|" + m.Text,
+			UserID: m.From.ID, State: "edit_wait_value", Data: st.Data + "|" + m.Text,
 		})
 		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте новое значение скидки:"))
 
-	case "edit_wait_url":
+	case "edit_wait_value":
+		// Обработка изменения URL скидки
 		parts := strings.SplitN(st.Data, "|", 2)
 		id, _ := strconv.Atoi(parts[0])
 		newName := parts[1]
 		newURL := m.Text
-		if err := h.service.Repo.UpdateStickerPack(dbctx, id, newName, newURL); err != nil {
+
+		// Обработка нового image_url
+		_ = h.service.Repo.SetAdminState(dbctx, models.AdminState{
+			UserID: m.From.ID, State: "edit_wait_image_url", Data: fmt.Sprintf("%d|%s|%s", id, newName, newURL),
+		})
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Теперь отправьте ссылку на новое изображение скидки (https://example.com):"))
+	case "edit_wait_image_url":
+		// Обновление image_url и данных скидки
+		parts := strings.SplitN(st.Data, "|", 3)
+		id, _ := strconv.Atoi(parts[0])
+		newName := parts[1]
+		newURL := parts[2]
+		newImageURL := m.Text
+
+		// Обновляем скидку в базе данных
+		if err := h.service.Repo.UpdatePromotion(dbctx, id, newName, newURL, newImageURL); err != nil {
 			_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "Ошибка: "+err.Error()))
 			return
 		}
+
+		// Очищаем состояние админа
 		_ = h.service.Repo.ClearAdminState(dbctx, m.From.ID)
-		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "✅ Обновлено"))
+		_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(m.Chat.ID, "✅ Скидка обновлена с новой картинкой"))
 	}
 }
 
@@ -284,7 +322,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData("Проверить подписку", "draw"),
 			))
-		msg := tgbotapi.NewMessage(chatID, "Подпишись на канал "+h.subChannelLink+", чтобы получить скидку")
+		msg := tgbotapi.NewMessage(chatID, "Подпишитесь на канал "+h.subChannelLink+", чтобы получить скидку")
 		msg.ReplyMarkup = mk
 		_, _ = h.sender.Send(ctx, msg)
 		return
@@ -293,7 +331,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	// Клейм + выбор пакета
 	dbctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 	defer cancel()
-	p, err := h.service.ClaimStickerPack(dbctx, userID, h.adminID)
+	p, err := h.service.ClaimPromotion(dbctx, userID, h.adminID)
 	if err != nil {
 		switch {
 		case errors.Is(err, services.ErrAlreadyClaimed):
@@ -312,11 +350,11 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			msg.ReplyMarkup = mk
 			_, _ = h.sender.Send(ctx, msg)
 			return
-		case errors.Is(err, repositories.ErrNoPacks):
+		case errors.Is(err, repositories.ErrNoPromotions):
 			_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(chatID, "⚠️ Скидок пока нет. Попробуйте позже."))
 			return
 		default:
-			log.Println("ClaimStickerPack:", err)
+			log.Println("ClaimPromotion:", err)
 			_, _ = h.sender.Send(ctx, tgbotapi.NewMessage(chatID, "Произошла ошибка. Попробуйте позже."))
 			return
 		}
@@ -332,10 +370,20 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		time.Sleep(2 * time.Second)
 
 		text := "Ваша счастливая скидка:\n" +
-			"👉<u><b>" + url + "</b></u>👈"
-		msg := tgbotapi.NewMessage(chatID, text)
-		msg.ParseMode = tgbotapi.ModeHTML
-		_, _ = h.sender.Send(context.Background(), msg)
+			"👉<u><b>" + url + "</b></u>"
+
+		if p.ImageURL != "" {
+			// Отправляем фото
+			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(p.ImageURL))
+			photo.Caption = text
+			photo.ParseMode = tgbotapi.ModeHTML
+			_, _ = h.sender.Send(ctx, photo)
+		} else {
+			// Отправляем без фото
+			msg := tgbotapi.NewMessage(chatID, text)
+			msg.ParseMode = tgbotapi.ModeHTML
+			_, _ = h.sender.Send(ctx, msg)
+		}
 
 		time.Sleep(1 * time.Second)
 
@@ -353,6 +401,6 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		am := tgbotapi.NewMessage(chatID, after)
 		am.ParseMode = tgbotapi.ModeHTML
 		am.ReplyMarkup = mk
-		_, _ = h.sender.Send(context.Background(), am)
-	}(chatID, p.URL, h.shopURL)
+		_, _ = h.sender.Send(ctx, am)
+	}(chatID, p.Value, h.shopURL)
 }

@@ -38,8 +38,8 @@ func main() {
 
 	admin := tgbotapi.NewSetMyCommands(
 		tgbotapi.BotCommand{Command: "start", Description: "Начать работу"},
-		tgbotapi.BotCommand{Command: "packs", Description: "Список скидок"},
-		tgbotapi.BotCommand{Command: "addpack", Description: "Добавить скидку"},
+		tgbotapi.BotCommand{Command: "promotions", Description: "Список скидок"},
+		tgbotapi.BotCommand{Command: "addpromotion", Description: "Добавить скидку"},
 	)
 	adminScope := tgbotapi.NewBotCommandScopeChat(cfg.AdminID)
 	admin.Scope = &adminScope

@@ -3,7 +3,7 @@
 A production-ready Telegram bot that gives each user **one random “entity”** exactly once and then sends a short follow-up CTA flow.
 
 > **Use case (generalized):**
-> The “entity” is anything with a **name** and a **text field** (e.g., URL, secondary title, promo code). Originally used for sticker packs, but you can plug in any content type that fits `name + text`.
+> The “entity” is anything with a **name** and a **text field** (e.g., URL, secondary title, promo code). Originally used for promotions, but you can plug in any content type that fits `name + text`.
 
 ---
 
@@ -31,10 +31,11 @@ A production-ready Telegram bot that gives each user **one random “entity”**
 ## Database Schema
 
 ```sql
-CREATE TABLE IF NOT EXISTS sticker_packs (
+CREATE TABLE IF NOT EXISTS promotions (
   id   SERIAL PRIMARY KEY,
   name TEXT UNIQUE NOT NULL,
-  url  TEXT NOT NULL      -- generic "text field": a URL or any text payload
+  value  TEXT NOT NULL,      -- generic "text field": a URL or any text payload
+  image_url TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS user_claims (
@@ -53,7 +54,7 @@ CREATE TABLE bot_users (
 );
 ```
 
-> You can rename `sticker_packs` to your domain (e.g., `rewards`) and keep the same columns: `name TEXT UNIQUE`, `url TEXT` (or rename `url` to `payload`).
+> You can rename `promotions` to your domain (e.g., `rewards`) and keep the same columns: `name TEXT UNIQUE`, `value TEXT` (or rename `value` to `payload`).
 
 ---
 
@@ -154,8 +155,8 @@ This repo includes `deploy.yml` (GitHub Actions) that:
 ## Admin Commands
 
 * `/start` — send start screen.
-* `/packs` — list all entities (rows), choose one to edit/delete.
-* `/addpack` — guided flow to add new entity.
+* `/promotions` — list all entities (rows), choose one to edit/delete.
+* `/addpromotion` — guided flow to add new entity.
 * `/draw` — force a claim+send (admin bypasses one-time restriction).
 
 > For end-users, `/start` and `/draw` are available. Each non-admin user can claim once.
@@ -167,7 +168,6 @@ This repo includes `deploy.yml` (GitHub Actions) that:
 * **Worker pool** for updates (parallel handling).
 * **Global Telegram API rate-limiter** to avoid HTTP 429.
 * **Atomic one-time claim:** `INSERT ... ON CONFLICT DO NOTHING` on `user_claims`.
-* **Typed errors** (`ErrAlreadyClaimed`, `ErrNoPacks`) for clean control flow.
 * **Context timeouts** around DB and Telegram operations.
 * **Callback ACK** to remove loading “hourglass” in Telegram UI.
 

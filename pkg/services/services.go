@@ -17,16 +17,16 @@ func NewService(repo *repositories.Repository) *Service {
 	return &Service{Repo: repo}
 }
 
-func (s *Service) ClaimStickerPack(ctx context.Context, userID, adminID int64) (models.StickerPack, error) {
+func (s *Service) ClaimPromotion(ctx context.Context, userID, adminID int64) (models.Promotion, error) {
 	// Админ может дергать бесконечно
 	if userID != adminID {
 		ok, err := s.Repo.TryClaim(ctx, userID)
 		if err != nil {
-			return models.StickerPack{}, err
+			return models.Promotion{}, err
 		}
 		if !ok {
-			return models.StickerPack{}, ErrAlreadyClaimed
+			return models.Promotion{}, ErrAlreadyClaimed
 		}
 	}
-	return s.Repo.GetRandomStickerPack(ctx)
+	return s.Repo.GetRandomPromotion(ctx)
 }

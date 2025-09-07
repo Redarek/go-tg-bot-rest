@@ -358,26 +358,35 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 	// Отправляем "кубик" сразу…
 	dice := tgbotapi.NewDice(chatID)
 	dice.Emoji = "🎲"
-	_, _ = h.sender.Send(ctx, dice)
+	_, err = h.sender.Send(ctx, dice)
+	if err != nil {
+		log.Println(err)
+	}
 
 	// …а дальше — без блокировки текущего воркера
-	go func(chatID int64, url, shop string) {
+	go func(chatID int64, value, imageURL, shop string) {
 		time.Sleep(2 * time.Second)
 
 		text := "Ваша счастливая скидка:\n" +
-			"👉<u><b>" + url + "</b></u>"
+			"👉<u><b>" + value + "</b></u>"
 
-		if p.ImageURL != "" {
+		if imageURL != "" {
 			// Отправляем фото
-			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(p.ImageURL))
+			photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(imageURL))
 			photo.Caption = text
 			photo.ParseMode = tgbotapi.ModeHTML
-			_, _ = h.sender.Send(ctx, photo)
+			_, err = h.sender.Send(ctx, photo)
+			if err != nil {
+				log.Println(err)
+			}
 		} else {
 			// Отправляем без фото
 			msg := tgbotapi.NewMessage(chatID, text)
 			msg.ParseMode = tgbotapi.ModeHTML
-			_, _ = h.sender.Send(ctx, msg)
+			_, err = h.sender.Send(ctx, msg)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 
 		time.Sleep(1 * time.Second)
@@ -386,8 +395,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonURL("Забронировать столик", shop),
 			))
-		after := "⚡️<u>Попытка была одна — и Фортуна уже подарила тебе особую скидку!</u>\n\n" +
-			"Забронируй столик на нашем сайте и воспользуйся скидкой в ресторане:\n" +
+		after := "Забронируй столик на нашем сайте и воспользуйся скидкой в ресторане:\n" +
 			"🔹<a href=\"https://ketino.ru\">НАШ САЙТ</a>\n" +
 			"🔸<a href=\"https://instagram.com/ketino_rest\">INSTA</a>\n" +
 			"🔹<a href=\"https://vk.com/ketinorest\">VKONTAKTE</a>\n" +
@@ -396,6 +404,9 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		am := tgbotapi.NewMessage(chatID, after)
 		am.ParseMode = tgbotapi.ModeHTML
 		am.ReplyMarkup = mk
-		_, _ = h.sender.Send(ctx, am)
-	}(chatID, p.Value, h.shopURL)
+		_, err = h.sender.Send(ctx, am)
+		if err != nil {
+			log.Println(err)
+		}
+	}(chatID, p.Value, p.ImageURL, h.shopURL)
 }

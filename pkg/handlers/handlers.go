@@ -45,7 +45,7 @@ func NewHandler(bot *tgbotapi.BotAPI, sender *services.Sender, db *pgxpool.Pool,
 
 func (h *Handler) HandleUpdate(upd tgbotapi.Update) {
 	// базовый контекст на обработку одного апдейта
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	switch {

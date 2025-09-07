@@ -377,7 +377,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			photo.ParseMode = tgbotapi.ModeHTML
 			_, err = h.sender.Send(ctx, photo)
 			if err != nil {
-				log.Println(err)
+				log.Println("send with photo", err)
 			}
 		} else {
 			// Отправляем без фото
@@ -385,7 +385,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 			msg.ParseMode = tgbotapi.ModeHTML
 			_, err = h.sender.Send(ctx, msg)
 			if err != nil {
-				log.Println(err)
+				log.Println("send without photo", err)
 			}
 		}
 
@@ -406,7 +406,7 @@ func (h *Handler) processDraw(ctx context.Context, chatID, userID int64) {
 		am.ReplyMarkup = mk
 		_, err = h.sender.Send(ctx, am)
 		if err != nil {
-			log.Println(err)
+			log.Println("send CAT", err)
 		}
 	}(chatID, p.Value, p.ImageURL, h.shopURL)
 }

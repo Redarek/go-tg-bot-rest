@@ -1,7 +1,7 @@
-CREATE TABLE IF NOT EXISTS promotions (
+CREATE TABLE IF NOT EXISTS sticker_packs (
                                              id SERIAL PRIMARY KEY,
                                              name TEXT UNIQUE NOT NULL,
-                                             value TEXT NOT NULL
+                                             url TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS user_claims (
                                            user_id BIGINT PRIMARY KEY

@@ -1,9 +1,9 @@
 package models
 
-type Promotion struct {
+type StickerPack struct {
 	ID      int
 	Name    string
-	Value   string
+	URL     string
 	Deleted bool
 }
 
